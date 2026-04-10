@@ -30,11 +30,11 @@ const AssignLeads: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
   // Date filter state
-const [fromDate, setFromDate] = useState('');
-const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
-const [appliedFromDate, setAppliedFromDate] = useState('');
-const [appliedToDate, setAppliedToDate] = useState('');
+  const [appliedFromDate, setAppliedFromDate] = useState('');
+  const [appliedToDate, setAppliedToDate] = useState('');
 
   const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('');
   const [sourceFilter, setSourceFilter] = useState<LeadSource | ''>('');
@@ -96,8 +96,8 @@ const [appliedToDate, setAppliedToDate] = useState('');
     appliedFromDate,
     appliedToDate
   ]);
-  
-  
+
+
   const fetchData = async () => {
     await Promise.all([fetchLeads(), fetchUsers(), fetchFolders()]);
   };
@@ -151,24 +151,24 @@ const [appliedToDate, setAppliedToDate] = useState('');
     try {
       setLoading(true);
       const filters: any = {};
-  
+
       // existing filters
       if (statusFilter) filters.status = [statusFilter];
       if (sourceFilter) filters.source = [sourceFilter];
-  
+
       if (folderFilter) {
         filters.folder = [folderFilter];
       }
-  
+
       if (appliedSearchQuery) filters.search = appliedSearchQuery;
-  
+
       if (userFilter === 'unassigned') {
         filters.assignedTo = null;
       } else if (userFilter !== 'all') {
         filters.assignedTo = [userFilter];
       }
-  
-   //   ✅ DATE FILTER LOGIC
+
+      //   ✅ DATE FILTER LOGIC
       if (
         appliedFromDate &&
         appliedToDate &&
@@ -180,13 +180,13 @@ const [appliedToDate, setAppliedToDate] = useState('');
         if (appliedFromDate) filters.fromDate = appliedFromDate;
         if (appliedToDate) filters.toDate = appliedToDate;
       }
-  
+
       const response = await leadApi.getLeads(
         filters,
         currentPage,
         leadsPerPage
       );
-  
+
       if (response.success) {
         setLeads(response.data);
         if (response.pagination) {
@@ -202,7 +202,7 @@ const [appliedToDate, setAppliedToDate] = useState('');
       setLoading(false);
     }
   };
-  
+
 
   const fetchStatuses = async () => {
     try {
@@ -268,7 +268,8 @@ const [appliedToDate, setAppliedToDate] = useState('');
       'Import': 'bg-orange-100 text-orange-800',
       'Manual': 'bg-gray-100 text-gray-800',
       'Cold Call': 'bg-indigo-100 text-indigo-800',
-      'Email Campaign': 'bg-pink-100 text-pink-800'
+      'Email Campaign': 'bg-pink-100 text-pink-800',
+      'strategy_call_modal': 'bg-teal-100 text-teal-800'
     };
     return colors[source] || 'bg-gray-100 text-gray-800';
   };
@@ -634,14 +635,14 @@ const [appliedToDate, setAppliedToDate] = useState('');
           <div className="card-body">
             <form onSubmit={(e) => {
               e.preventDefault();
-            setAppliedSearchQuery(searchQuery);
+              setAppliedSearchQuery(searchQuery);
 
-// apply date filters
-setAppliedFromDate(fromDate);
-setAppliedToDate(toDate);
+              // apply date filters
+              setAppliedFromDate(fromDate);
+              setAppliedToDate(toDate);
 
-setCurrentPage(1);
-fetchLeads();
+              setCurrentPage(1);
+              fetchLeads();
             }} className="grid grid-cols-1 md:grid-cols-9 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
@@ -655,25 +656,25 @@ fetchLeads();
                   />
                 </div>
               </div>
-{/* From Date */}
-<div>
-  <input
-    type="date"
-    className="form-input w-full"
-    value={fromDate}
-    onChange={(e) => setFromDate(e.target.value)}
-  />
-</div>
+              {/* From Date */}
+              <div>
+                <input
+                  type="date"
+                  className="form-input w-full"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
 
-{/* To Date */}
-<div>
-  <input
-    type="date"
-    className="form-input w-full"
-    value={toDate}
-    onChange={(e) => setToDate(e.target.value)}
-  />
-</div>
+              {/* To Date */}
+              <div>
+                <input
+                  type="date"
+                  className="form-input w-full"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
 
               <div>
                 <select
@@ -728,23 +729,23 @@ fetchLeads();
               </div>
 
               <div>
-              <button
-  type="submit"
-  disabled={loading}
-  className="btn btn-primary w-full"
->
-  {loading ? (
-    <>
-      <div className="loading-spinner mr-2"></div>
-      Searching...
-    </>
-  ) : (
-    <>
-      <Search className="w-4 h-4" />
-      Search
-    </>
-  )}
-</button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary w-full"
+                >
+                  {loading ? (
+                    <>
+                      <div className="loading-spinner mr-2"></div>
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      Search
+                    </>
+                  )}
+                </button>
 
               </div>
             </form>
@@ -759,17 +760,17 @@ fetchLeads();
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Leads Assignment</h3>
               <div className="flex items-center gap-3">
-  <h3 className="text-lg font-semibold">
-    Leads Available for Assignment
-  </h3>
+                <h3 className="text-lg font-semibold">
+                  Leads Available for Assignment
+                </h3>
 
-  {loading && (
-    <span className="flex items-center gap-2 text-sm text-gray-500">
-      <div className="loading-spinner w-4 h-4"></div>
-      Refreshing…
-    </span>
-  )}
-</div>
+                {loading && (
+                  <span className="flex items-center gap-2 text-sm text-gray-500">
+                    <div className="loading-spinner w-4 h-4"></div>
+                    Refreshing…
+                  </span>
+                )}
+              </div>
 
 
             </div>
@@ -845,14 +846,14 @@ fetchLeads();
                     </td>
                     <td className="whitespace-nowrap">
                       <span className={`font-medium ${lead.priority === 'High' ? 'text-red-600' :
-                          lead.priority === 'Medium' ? 'text-yellow-600' : 'text-green-600'
+                        lead.priority === 'Medium' ? 'text-yellow-600' : 'text-green-600'
                         }`}>
                         {lead.priority}
                       </span>
                     </td>
                     <td className="whitespace-nowrap text-sm text-gray-600">
-  {new Date(lead.createdAt).toLocaleString()}
-</td>
+                      {new Date(lead.createdAt).toLocaleString()}
+                    </td>
 
                     <td className="whitespace-nowrap max-w-xs">
                       {lead.notes && lead.notes.length > 0 ? (
