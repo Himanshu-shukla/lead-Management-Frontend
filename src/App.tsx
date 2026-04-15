@@ -15,6 +15,7 @@ import UserManagement from './pages/UserManagement';
 import StatusManagement from './pages/StatusManagement';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import CourseAutomationConfigs from './pages/CourseAutomationConfigs';
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -196,6 +197,17 @@ const AppRoutes: React.FC = () => {
             </Layout>
           </ProtectedRoute>
         } 
+      />
+
+      <Route
+        path="/course-automation-configs"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CourseAutomationConfigs />
+            </Layout>
+          </ProtectedRoute>
+        }
       />
 
       <Route 

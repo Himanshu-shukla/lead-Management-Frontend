@@ -10,7 +10,8 @@ import {
   Settings,
   UserCheck,
   FileSpreadsheet,
-  Target
+  Target,
+  Bot
 } from 'lucide-react';
 import type { NavItem } from '../types';
 import Logo from './Logo';
@@ -31,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Import Leads', href: '/leads/import', icon: Upload, adminOnly: true },
     { name: 'Assign Leads', href: '/leads/assign', icon: FileSpreadsheet, adminOnly: true },
     { name: 'User Management', href: '/users', icon: UserCheck, adminOnly: true },
+    { name: 'Course Automation', href: '/course-automation-configs', icon: Bot, adminOnly: true },
     { name: 'Analytics', href: '/analytics', icon: TrendingUp, adminOnly: true },
     { name: 'Settings', href: '/settings', icon: Settings, adminOnly: true },
   ];

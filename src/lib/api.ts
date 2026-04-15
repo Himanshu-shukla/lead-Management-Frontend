@@ -18,6 +18,9 @@ import type {
   DynamicImportRequest,
   LeadFieldDefinition,
   GoogleSheetImportResponse
+  ,
+  CourseAutomationConfig,
+  CourseAutomationConfigForm
 
 } from '../types';
 
@@ -658,6 +661,81 @@ export const statusApi = {
   updateOrder: async (statuses: Array<{ id: string; order: number }>): Promise<ApiResponse> => {
     try {
       const response = await api.put('/statuses/order', { statuses });
+      return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+};
+
+export const courseAutomationConfigApi = {
+  getCourseAutomationConfigs: async (
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+    isActive?: boolean
+  ): Promise<PaginatedResponse<CourseAutomationConfig>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      if (search) {
+        params.append('search', search);
+      }
+
+      if (typeof isActive === 'boolean') {
+        params.append('isActive', String(isActive));
+      }
+
+      const response = await api.get(`/course-automation-configs?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch course automation configs',
+        data: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      };
+    }
+  },
+
+  getCourseAutomationConfigById: async (id: string): Promise<ApiResponse<CourseAutomationConfig>> => {
+    try {
+      const response = await api.get(`/course-automation-configs/${id}`);
+      return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+
+  createCourseAutomationConfig: async (
+    payload: CourseAutomationConfigForm
+  ): Promise<ApiResponse<CourseAutomationConfig>> => {
+    try {
+      const response = await api.post('/course-automation-configs', payload);
+      return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+
+  updateCourseAutomationConfig: async (
+    id: string,
+    payload: CourseAutomationConfigForm
+  ): Promise<ApiResponse<CourseAutomationConfig>> => {
+    try {
+      const response = await api.put(`/course-automation-configs/${id}`, payload);
+      return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+
+  deleteCourseAutomationConfig: async (id: string): Promise<ApiResponse> => {
+    try {
+      const response = await api.delete(`/course-automation-configs/${id}`);
       return handleResponse(response);
     } catch (error) {
       return handleError(error);

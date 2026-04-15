@@ -50,6 +50,9 @@ export interface Lead {
   source: LeadSource;
   status: LeadStatus;
   priority: LeadPriority;
+  courseSlug?: string;
+  courseAutomationConfig?: CourseAutomationConfig;
+  whatsappEngagement?: LeadWhatsAppEngagement;
 
   assignedTo?: string;
   assignedBy?: string;
@@ -77,6 +80,24 @@ export interface LeadNote {
   createdAt: string;
 }
 
+export interface LeadWhatsAppAnswer {
+  questionId: string;
+  question: string;
+  answerKey: string;
+  answerLabel: string;
+  source: 'interactive' | 'text';
+  answeredAt: string;
+}
+
+export interface LeadWhatsAppEngagement {
+  warmIntroSentAt?: string;
+  warmIntroStatus?: 'pending' | 'sent' | 'failed' | 'skipped';
+  warmIntroError?: string;
+  currentQuestionId?: string;
+  conversationCompletedAt?: string;
+  answers?: LeadWhatsAppAnswer[];
+}
+
 export type LeadSource = 'Website' | 'Social Media' | 'Referral' | 'Import' | 'Manual' | 'Cold Call' | 'Email Campaign' | 'strategy_call_modal';
 
 // LeadStatus is now dynamic - fetched from API
@@ -92,6 +113,33 @@ export interface Status {
   order: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface CourseQuestionOption {
+  key: string;
+  label: string;
+}
+
+export interface CourseQuestion {
+  id: string;
+  text: string;
+  options: CourseQuestionOption[];
+  allowsTextReply?: boolean;
+}
+
+export interface CourseAutomationConfig {
+  _id: string;
+  courseSlug: string;
+  courseTitle: string;
+  curriculumUrl: string;
+  aliases: string[];
+  metaCampaignNames: string[];
+  metaAdsetNames: string[];
+  metaAdNames: string[];
+  whatsappQuestions: CourseQuestion[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Dashboard Types
@@ -161,6 +209,7 @@ export interface CreateLeadForm {
   source: LeadSource;
   priority: LeadPriority;
   notes?: string;
+  courseSlug?: string;
 }
 
 export interface UpdateLeadForm {
@@ -172,6 +221,7 @@ export interface UpdateLeadForm {
   source?: LeadSource;
   status?: LeadStatus;
   priority?: LeadPriority;
+  courseSlug?: string;
 }
 
 export interface AssignLeadForm {
@@ -283,6 +333,18 @@ export interface DynamicImportRequest {
   noteMappings?: NoteMapping[];
   skipEmptyRows: boolean;
   startFromRow: number;
+}
+
+export interface CourseAutomationConfigForm {
+  courseSlug: string;
+  courseTitle: string;
+  curriculumUrl: string;
+  aliases: string[];
+  metaCampaignNames: string[];
+  metaAdsetNames: string[];
+  metaAdNames: string[];
+  whatsappQuestions: CourseQuestion[];
+  isActive: boolean;
 }
 
 export interface LeadFieldDefinition {
