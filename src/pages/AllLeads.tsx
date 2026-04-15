@@ -12,6 +12,7 @@ import {
   UserPlus,
   Phone,
   Mail,
+  MessageCircle,
   Calendar,
   RefreshCw,
   FolderOpen,
@@ -183,46 +184,40 @@ useEffect(() => {
     try {
       setLoading(true);
       
-      // Fetch both folders and their counts efficiently
-      const [foldersResponse, countsResponse] = await Promise.all([
-        leadApi.getDistinctFolders(),
-        leadApi.getFolderCounts()
-      ]);
+      // 1. Call the single optimized API that returns both folder and status stats
+      const response = await leadApi.getFolderCountForAdmin(); 
       
-      if (foldersResponse.success && foldersResponse.data) {
-        // Add default folder for uncategorized leads
-        const allFolders = [...foldersResponse.data, 'Uncategorized'];
-        setAvailableFolders(allFolders);
+      if (response.success && response.data) {
+        // Cast to any to handle the specific backend structure we built
+        const apiData = response.data as any;
         
-        // Use server-side folder counts if available
-        if (countsResponse.success && countsResponse.data) {
-          setFolderStats(countsResponse.data);
-        } else {
-          // Fallback to zero counts
-          const stats: Record<string, number> = {};
-          allFolders.forEach(folder => {
-            stats[folder] = 0;
-          });
-          setFolderStats(stats);
-        }
-      }
-
-      // Fetch status counts
-      const allLeadsResponse = await leadApi.getLeads({}, 1, 10000);
-      if (allLeadsResponse.success) {
-        const stats: Record<string, number> = {};
-        allLeadsResponse.data.forEach(lead => {
-          stats[lead.status] = (stats[lead.status] || 0) + 1;
+        const folderData: Record<string, number> = apiData.folderStats || {};
+        const statusData: Record<string, number> = apiData.statusStats || {};
+  
+        // 2. Set Stats (Uncategorized now contains the TOTAL count from backend)
+        setFolderStats(folderData);
+        setStatusStats(statusData);
+  
+        // 3. Update the folder list for UI tabs/dropdowns
+        // We sort them but ensure 'Uncategorized' (the Total) stays at the very top
+        const sortedFolders = Object.keys(folderData).sort((a, b) => {
+          if (a === 'Uncategorized') return -1;
+          if (b === 'Uncategorized') return 1;
+          return a.localeCompare(b);
         });
-        setStatusStats(stats);
+        
+        setAvailableFolders(sortedFolders);
       }
     } catch (error) {
-      console.error('Error fetching folders:', error);
-      toast.error('Failed to load folders');
+      console.error('Error fetching folders/stats:', error);
+      toast.error('Failed to load folders and statistics');
     } finally {
       setLoading(false);
     }
   };
+
+
+
   const fetchLeads = async () => {
     try {
       setLoading(true);
@@ -362,7 +357,8 @@ useEffect(() => {
       'Negotiating': 'bg-pink-100 text-pink-800',
       'Sales Done': 'bg-teal-100 text-teal-800',
       'DNP': 'bg-slate-100 text-slate-800',
-      'Wrong Number': 'bg-gray-100 text-gray-800'
+      'Wrong Number': 'bg-gray-100 text-gray-800',
+      'Call Back': 'bg-cyan-100 text-cyan-800' // Added this line
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -949,6 +945,15 @@ useEffect(() => {
                           className="text-blue-600 hover:text-blue-800"
                         >
                           {lead.phone}
+                        </a>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <MessageCircle className="w-3 h-3 text-gray-400 mr-1" />
+                        <a 
+                          href={`tel:${lead.whatsapp}`}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          {lead.whatsapp}
                         </a>
                       </div>
                     </div>

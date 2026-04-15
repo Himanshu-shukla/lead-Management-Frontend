@@ -15,7 +15,10 @@ import UserManagement from './pages/UserManagement';
 import StatusManagement from './pages/StatusManagement';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
-import CourseAutomationConfigs from './pages/CourseAutomationConfigs';
+import WhatsAppChatUI from './pages/whatsapp';
+import RestrictedPopup from './components/RestrictedAccess';
+import AttendanceReport from './pages/AttendanceManagement';
+// import WhatsAppChatUI from './pages/whatsapp';
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -199,17 +202,6 @@ const AppRoutes: React.FC = () => {
         } 
       />
 
-      <Route
-        path="/course-automation-configs"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <CourseAutomationConfigs />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
       <Route 
         path="/settings" 
         element={
@@ -220,6 +212,26 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         } 
       />
+       <Route 
+        path="/WhatsAppChat" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <WhatsAppChatUI />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+  <Route 
+  path="/attendance-management"
+  element={
+    <ProtectedRoute> {/* Ensure this prop is passed if your component needs it */}
+      <Layout>
+        <AttendanceReport />
+      </Layout>
+    </ProtectedRoute>
+  } 
+/>
 
       {/* Default redirect */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -256,6 +268,8 @@ const App: React.FC = () => {
       <Router>
         <div className="App">
           <AppRoutes />
+          {/*  ADD THE RESTRICTED POPUP HERE */}
+          <RestrictedPopup />
           <Toaster 
             position="top-right"
             toastOptions={{

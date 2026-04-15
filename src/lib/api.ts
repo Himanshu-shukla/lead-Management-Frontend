@@ -17,16 +17,12 @@ import type {
   SheetPreviewData,
   DynamicImportRequest,
   LeadFieldDefinition,
-  GoogleSheetImportResponse
-  ,
-  CourseAutomationConfig,
-  CourseAutomationConfigForm
+  GoogleSheetImportResponse,
 
 } from '../types';
-
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://api.leads.edtechinformative.uk/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -47,6 +43,7 @@ api.interceptors.request.use(
   }
 );
 
+// Response interceptor for error handling
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
@@ -76,7 +73,18 @@ const handleError = (error: any): ApiResponse => {
   if (error.response?.data) {
     const errorData = error.response.data;
     
-    // Handle duplicate errors with better messages
+    // 📍 Handle Clock-Out Restriction
+    if (errorData.isClockedOut === true) {
+      // 📍 Dispatch a custom event that the UI will listen for
+      const event = new CustomEvent('showRestrictedAccess', { 
+        detail: { message: errorData.message } 
+      });
+      window.dispatchEvent(event);
+
+      return { ...errorData, isClockedOut: true };
+    }
+
+    // Handle duplicate errors
     if (errorData.message === 'Duplicate lead detected' || 
         errorData.errors?.some((err: string) => err.includes('already exists'))) {
       return {
@@ -85,15 +93,15 @@ const handleError = (error: any): ApiResponse => {
         isDuplicate: true
       };
     }
-    
+
     return errorData;
   }
+  
   return {
     success: false,
     message: error.message || 'An unexpected error occurred',
   };
 };
-
 // Authentication API
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<ApiResponse<{ user: User; token: string }>> => {
@@ -302,7 +310,52 @@ export const leadApi = {
     }
   },
   
+/**
+   * Admin-only: Fetch all chat history across the platform
+   * Maps to: router.get("/getChat", requireAdmin, getAllChats)
+   */
+/**
+   * Admin-only: Fetch all chat history across the platform
+   * Maps to: router.get("/getChat", requireAdmin, getAllChats)
+   */
+getAllChats: async (
+  filters?: { phone?: string; search?: string; platform?: string },
+  page?: number,
+  limit?: number
+): Promise<PaginatedResponse<any>> => {
+  try {
+    const params = new URLSearchParams();
 
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+
+    // ✅ FIX: Added the leading slash and ensured it points to /leads/getChat
+    const response = await api.get(`/chat/getChat?${params.toString()}`);
+    return response.data;
+
+  } catch (error) {
+    console.error("Fetch all chats error:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to fetch chat history',
+      data: [],
+      pagination: {
+        page: page || 1,
+        limit: limit || 50,
+        total: 0,
+        totalPages: 0
+      }
+    };
+  }
+},
   getDuplicateLeads: async (
     filters?: LeadFilters,
     page?: number,
@@ -465,6 +518,14 @@ export const leadApi = {
   getFolderCounts: async (): Promise<ApiResponse<Record<string, number>>> => {
     try {
       const response = await api.get('/leads/folder-counts');
+      return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+  getFolderCountForAdmin: async (): Promise<ApiResponse<Record<string, number>>> => {
+    try {
+      const response = await api.get('/leads/folder-countsALL');
       return handleResponse(response);
     } catch (error) {
       return handleError(error);
@@ -668,79 +729,226 @@ export const statusApi = {
   },
 };
 
-export const courseAutomationConfigApi = {
-  getCourseAutomationConfigs: async (
-    page: number = 1,
-    limit: number = 20,
-    search?: string,
-    isActive?: boolean
-  ): Promise<PaginatedResponse<CourseAutomationConfig>> => {
+
+
+
+
+/* ================= TYPES ================= */
+export interface AttendanceRecord {
+  _id: string;
+  date: string;
+  checkIn: string;
+  checkOut?: string;
+  workHours: number;
+  status: 'Present' | 'Late' | 'Half-day';
+  location: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface MonthlyReport {
+  totalDays: number;
+  totalHours: number;
+  averageHours: number;
+}
+/* ================= TYPES ================= */
+export interface WorkHoursStats {
+  totalHours: number;
+  daysCount: number;
+  period: 'today' | 'monthly' | 'yearly';
+}
+/* ================= API OBJECT ================= */
+export const attendanceApi = {
+  /**
+   * Clock in with current GPS coordinates
+   */
+  clockIn: async (lat: number, lng: number): Promise<ApiResponse<AttendanceRecord>> => {
+    try {
+      const response = await api.post('/attendance/check-in', { lat, lng });
+      return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+
+
+
+clockOut: async (lat: number, lng: number): Promise<ApiResponse<AttendanceRecord>> => {
+  try {
+    //  Coordinates must be passed to match the updated backend controller
+    const response = await api.post('/attendance/check-out', { lat, lng });
+    return handleResponse(response);
+  } catch (error) {
+    return handleError(error);
+  }
+},
+
+  /**
+   * Get paginated history of current user's attendance
+   */
+  getMyAttendance: async (page: number = 1, limit: number = 10): Promise<PaginatedResponse<AttendanceRecord>> => {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString(),
+        limit: limit.toString()
       });
-
-      if (search) {
-        params.append('search', search);
-      }
-
-      if (typeof isActive === 'boolean') {
-        params.append('isActive', String(isActive));
-      }
-
-      const response = await api.get(`/course-automation-configs?${params.toString()}`);
+      
+      const response = await api.get(`/attendance/my-history?${params.toString()}`);
       return response.data;
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to fetch course automation configs',
+        message: error instanceof Error ? error.message : 'Failed to fetch attendance history',
         data: [],
-        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
       };
     }
   },
 
-  getCourseAutomationConfigById: async (id: string): Promise<ApiResponse<CourseAutomationConfig>> => {
+  /**
+   * Get monthly stats for salary slip calculation
+   * @param month (1-12)
+   * @param year (e.g. 2026)
+   */
+  getMonthlyReport: async (month: number, year: number): Promise<ApiResponse<MonthlyReport>> => {
     try {
-      const response = await api.get(`/course-automation-configs/${id}`);
+      const response = await api.get(`/attendance/monthly-report?month=${month}&year=${year}`);
       return handleResponse(response);
     } catch (error) {
       return handleError(error);
     }
   },
 
-  createCourseAutomationConfig: async (
-    payload: CourseAutomationConfigForm
-  ): Promise<ApiResponse<CourseAutomationConfig>> => {
+
+  getWorkHours: async (period: 'today' | 'monthly' | 'yearly' = 'today'): Promise<ApiResponse<WorkHoursStats>> => {
     try {
-      const response = await api.post('/course-automation-configs', payload);
+      // Matches your route: router.get('/getWorkHours', getWorkHours)
+      const response = await api.get(`/attendance/getWorkHours?period=${period}`);
       return handleResponse(response);
     } catch (error) {
       return handleError(error);
     }
   },
 
-  updateCourseAutomationConfig: async (
-    id: string,
-    payload: CourseAutomationConfigForm
-  ): Promise<ApiResponse<CourseAutomationConfig>> => {
+
+
+  /**
+   * Get current attendance status for the UI lockdown and live timer
+   */
+  getStatus: async (): Promise<ApiResponse<{ isClockedIn: boolean; checkInTime: string | null }>> => {
     try {
-      const response = await api.put(`/course-automation-configs/${id}`, payload);
+      const response = await api.get('/attendance/status');
       return handleResponse(response);
     } catch (error) {
       return handleError(error);
     }
   },
 
-  deleteCourseAutomationConfig: async (id: string): Promise<ApiResponse> => {
+
+// Inside attendanceApi in your api.ts file
+// src/lib/api.ts
+getAdminReport: async (from: string, to: string, page: number = 1, limit: number = 15): Promise<any> => {
+  try {
+    // We pass page and limit to the backend to handle the large dataset
+    const params = new URLSearchParams({ 
+      from, 
+      to, 
+      page: page.toString(), 
+      limit: limit.toString() 
+    });
+    const response = await api.get(`/attendance/admin/report?${params.toString()}`);
+    return response.data; 
+  } catch (error) {
+    return handleError(error);
+  }
+},
+
+  /**
+   * User: Get personal attendance report
+   * URL: /attendance/report
+   */
+  getUserReport: async (): Promise<ApiResponse<any>> => {
     try {
-      const response = await api.delete(`/course-automation-configs/${id}`);
+      const response = await api.get('/attendance/report');
       return handleResponse(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+
+  /**
+   * Admin/User: Get specific analytics for a user by ID
+   * URL: /attendance/analytics/:userId?month=1&year=2025
+   */
+  getUserAnalytics: async (userId: string, options: { month: number; year: number }): Promise<ApiResponse<any>> => {
+    try {
+      const params = new URLSearchParams({ 
+        month: options.month.toString(), 
+        year: options.year.toString() 
+      });
+      const response = await api.get(`/attendance/analytics/${userId}?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+
+
+  getReport: async (
+    fromDate: string,
+    toDate: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<ApiResponse<any>> => {
+    try {
+      const params = new URLSearchParams({
+        fromDate,
+        toDate,
+        page: page.toString(),
+        limit: limit.toString()
+      });
+  
+      const response = await api.get(`/attendance/report?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+  
+};
+
+
+export const performance ={
+  // Inside src/lib/api.ts
+  getUserPerformance: async (
+    userId: string, 
+    filters: { range?: string; from?: string; to?: string }
+  ): Promise<any> => {
+    try {
+      const params = new URLSearchParams();
+      // Only append if the values actually exist
+      if (filters.range) params.append('range', filters.range);
+      if (filters.from) params.append('from', filters.from);
+      if (filters.to) params.append('to', filters.to);
+
+      // Matches: http://localhost:8000/api/performance/:userId?range=...
+      const response = await api.get(`/performance/${userId}?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      return handleError(error);
+    }
+  },
+  getUserAnalytics: async (userId: string, month: number, year: number): Promise<ApiResponse<any>> => {
+    try {
+      // Matches: http://localhost:8000/api/attendance/analytics/${userId}?month=${month}&year=${year}
+      const response = await api.get(`/attendance/analytics/${userId}?month=${month}&year=${year}`);
+      return response.data;
     } catch (error) {
       return handleError(error);
     }
   },
 };
+
 
 export default api;

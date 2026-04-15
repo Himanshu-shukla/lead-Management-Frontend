@@ -30,11 +30,11 @@ const AssignLeads: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
   // Date filter state
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+const [fromDate, setFromDate] = useState('');
+const [toDate, setToDate] = useState('');
 
-  const [appliedFromDate, setAppliedFromDate] = useState('');
-  const [appliedToDate, setAppliedToDate] = useState('');
+const [appliedFromDate, setAppliedFromDate] = useState('');
+const [appliedToDate, setAppliedToDate] = useState('');
 
   const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('');
   const [sourceFilter, setSourceFilter] = useState<LeadSource | ''>('');
@@ -96,8 +96,8 @@ const AssignLeads: React.FC = () => {
     appliedFromDate,
     appliedToDate
   ]);
-
-
+  
+  
   const fetchData = async () => {
     await Promise.all([fetchLeads(), fetchUsers(), fetchFolders()]);
   };
@@ -105,70 +105,60 @@ const AssignLeads: React.FC = () => {
   const fetchFolders = async () => {
     try {
       setLoading(true);
-
-      // Fetch both folders and their counts efficiently
-      const [foldersResponse, countsResponse] = await Promise.all([
-        leadApi.getDistinctFolders(),
-        leadApi.getFolderCounts()
-      ]);
-
-      if (foldersResponse.success && foldersResponse.data) {
-        // Add default folder for uncategorized leads
-        const allFolders = [...foldersResponse.data, 'Uncategorized'];
-        setAvailableFolders(allFolders);
-
-        // Use server-side folder counts if available
-        if (countsResponse.success && countsResponse.data) {
-          setFolderStats(countsResponse.data);
-        } else {
-          // Fallback to zero counts
-          const stats: Record<string, number> = {};
-          allFolders.forEach(folder => {
-            stats[folder] = 0;
-          });
-          setFolderStats(stats);
-        }
-      }
-
-      // Fetch status counts
-      const allLeadsResponse = await leadApi.getLeads({}, 1, 10000);
-      if (allLeadsResponse.success) {
-        const stats: Record<string, number> = {};
-        allLeadsResponse.data.forEach(lead => {
-          stats[lead.status] = (stats[lead.status] || 0) + 1;
+      
+      // 1. Call the single optimized API that returns both folder and status stats
+      const response = await leadApi.getFolderCountForAdmin(); 
+      
+      if (response.success && response.data) {
+        // Cast to any to handle the specific backend structure we built
+        const apiData = response.data as any;
+        
+        const folderData: Record<string, number> = apiData.folderStats || {};
+        const statusData: Record<string, number> = apiData.statusStats || {};
+  
+        // 2. Set Stats (Uncategorized now contains the TOTAL count from backend)
+        setFolderStats(folderData);
+        setStatusStats(statusData);
+  
+        // 3. Update the folder list for UI tabs/dropdowns
+        // We sort them but ensure 'Uncategorized' (the Total) stays at the very top
+        const sortedFolders = Object.keys(folderData).sort((a, b) => {
+          if (a === 'Uncategorized') return -1;
+          if (b === 'Uncategorized') return 1;
+          return a.localeCompare(b);
         });
-        setStatusStats(stats);
+        
+        setAvailableFolders(sortedFolders);
       }
     } catch (error) {
-      console.error('Error fetching folders:', error);
-      toast.error('Failed to load folders');
+      console.error('Error fetching folders/stats:', error);
+      toast.error('Failed to load folders and statistics');
     } finally {
       setLoading(false);
     }
   };
-
   const fetchLeads = async () => {
     try {
       setLoading(true);
       const filters: any = {};
-
+  
       // existing filters
       if (statusFilter) filters.status = [statusFilter];
       if (sourceFilter) filters.source = [sourceFilter];
-
+  
       if (folderFilter) {
         filters.folder = [folderFilter];
       }
-
+  
       if (appliedSearchQuery) filters.search = appliedSearchQuery;
-
+  
       if (userFilter === 'unassigned') {
         filters.assignedTo = null;
       } else if (userFilter !== 'all') {
         filters.assignedTo = [userFilter];
       }
-
-      //   ✅ DATE FILTER LOGIC
+  
+   //   ✅ DATE FILTER LOGIC
       if (
         appliedFromDate &&
         appliedToDate &&
@@ -180,13 +170,13 @@ const AssignLeads: React.FC = () => {
         if (appliedFromDate) filters.fromDate = appliedFromDate;
         if (appliedToDate) filters.toDate = appliedToDate;
       }
-
+  
       const response = await leadApi.getLeads(
         filters,
         currentPage,
         leadsPerPage
       );
-
+  
       if (response.success) {
         setLeads(response.data);
         if (response.pagination) {
@@ -202,7 +192,7 @@ const AssignLeads: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
 
   const fetchStatuses = async () => {
     try {
@@ -268,8 +258,7 @@ const AssignLeads: React.FC = () => {
       'Import': 'bg-orange-100 text-orange-800',
       'Manual': 'bg-gray-100 text-gray-800',
       'Cold Call': 'bg-indigo-100 text-indigo-800',
-      'Email Campaign': 'bg-pink-100 text-pink-800',
-      'strategy_call_modal': 'bg-teal-100 text-teal-800'
+      'Email Campaign': 'bg-pink-100 text-pink-800'
     };
     return colors[source] || 'bg-gray-100 text-gray-800';
   };
@@ -388,7 +377,8 @@ const AssignLeads: React.FC = () => {
       'Negotiating': 'bg-pink-100 text-pink-800',
       'Sales Done': 'bg-emerald-100 text-emerald-800',
       'DNP': 'bg-slate-100 text-slate-800',
-      'Wrong Number': 'bg-gray-100 text-gray-800'
+      'Wrong Number': 'bg-gray-100 text-gray-800',
+      'Call Back': 'bg-cyan-100 text-cyan-800' // Added this line
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -542,73 +532,76 @@ const AssignLeads: React.FC = () => {
           <div className="card-body">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <UserPlus className="w-6 h-6 text-blue-600" />
+              <UserPlus className="w-6 h-6 text-blue-600" />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900">
                     Bulk Assignment & Status Update
-                  </h3>
-                  <p className="text-gray-600">
+          </h3>
+          <p className="text-gray-600">
                     {selectedLeads.length > 0
                       ? `${selectedLeads.length} lead${selectedLeads.length > 1 ? 's' : ''} selected - Assign and/or update status`
                       : 'Select leads below to assign users and update status'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
+            }
+          </p>
+        </div>
+      </div>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <InfiniteScrollUserDropdown
-                  value={selectedUser}
-                  onChange={setSelectedUser}
-                  disabled={assigning || updatingStatus}
-                  includeUnassign={true}
-                  placeholder="No change to assignment"
-                />
-              </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+  <div
+    onClick={(e) => e.stopPropagation()}
+    onMouseDown={(e) => e.stopPropagation()}
+  >
+    <InfiniteScrollUserDropdown
+      value={selectedUser}
+      onChange={setSelectedUser}
+      disabled={assigning || updatingStatus}
+      includeUnassign={true}
+      placeholder="No change to assignment"
+    />
+  </div>
 
-              <div>
-                <label className="form-label">Update Status (Optional)</label>
-                <select
-                  value={bulkStatus}
-                  onChange={(e) => setBulkStatus(e.target.value)}
-                  className="form-input"
-                  disabled={assigning || updatingStatus}
-                >
-                  <option value="">No change to status</option>
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
+  <div>
+    <label className="form-label">Update Status (Optional)</label>
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            className="form-input"
+            disabled={assigning || updatingStatus}
+          >
+            <option value="">No change to status</option>
+            {statusOptions.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
 
-              <div>
-                <button
+        {/* Action Button */}
+        <div>
+        <button
                   onClick={handleAssignLeads}
                   disabled={selectedLeads.length === 0 || (!selectedUser && !bulkStatus) || assigning || updatingStatus}
                   className="btn btn-primary w-full"
-                >
-                  {(assigning || updatingStatus) ? (
-                    <>
-                      <div className="loading-spinner mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      Apply Changes{selectedLeads.length > 0 ? ` (${selectedLeads.length})` : ''}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+          >
+            {(assigning || updatingStatus) ? (
+               <>
+               <div className="loading-spinner mr-2"></div>
+               Processing...
+             </>
+            ) : (
+              <>
+              <CheckCircle className="w-4 h-4" />
+              Apply Changes{selectedLeads.length > 0 ? ` (${selectedLeads.length})` : ''}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
 
-            {/* Action Preview - Fixed for New Dropdown */}
-            {selectedLeads.length > 0 && (selectedUser || bulkStatus) && (
+          
+
+      {/* Improved Action Preview: Shows a summary of what will happen */}
+      {selectedLeads.length > 0 && (selectedUser || bulkStatus) && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800 font-medium">
                   Changes to apply:
@@ -623,11 +616,11 @@ const AssignLeads: React.FC = () => {
                     <li>• Update status to "{bulkStatus}"</li>
                   )}
                 </ul>
-              </div>
-            )}
-          </div>
         </div>
       )}
+    </div>
+  </div>
+)}
 
       {/* Filters */}
       {currentView === 'leads' && (
@@ -635,14 +628,14 @@ const AssignLeads: React.FC = () => {
           <div className="card-body">
             <form onSubmit={(e) => {
               e.preventDefault();
-              setAppliedSearchQuery(searchQuery);
+            setAppliedSearchQuery(searchQuery);
 
-              // apply date filters
-              setAppliedFromDate(fromDate);
-              setAppliedToDate(toDate);
+// apply date filters
+setAppliedFromDate(fromDate);
+setAppliedToDate(toDate);
 
-              setCurrentPage(1);
-              fetchLeads();
+setCurrentPage(1);
+fetchLeads();
             }} className="grid grid-cols-1 md:grid-cols-9 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
@@ -656,25 +649,25 @@ const AssignLeads: React.FC = () => {
                   />
                 </div>
               </div>
-              {/* From Date */}
-              <div>
-                <input
-                  type="date"
-                  className="form-input w-full"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                />
-              </div>
+{/* From Date */}
+<div>
+  <input
+    type="date"
+    className="form-input w-full"
+    value={fromDate}
+    onChange={(e) => setFromDate(e.target.value)}
+  />
+</div>
 
-              {/* To Date */}
-              <div>
-                <input
-                  type="date"
-                  className="form-input w-full"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                />
-              </div>
+{/* To Date */}
+<div>
+  <input
+    type="date"
+    className="form-input w-full"
+    value={toDate}
+    onChange={(e) => setToDate(e.target.value)}
+  />
+</div>
 
               <div>
                 <select
@@ -707,45 +700,50 @@ const AssignLeads: React.FC = () => {
                   ))}
                 </select>
               </div>
+              <div 
+  className="md:col-span-1" 
+  onClick={(e) => e.stopPropagation()} 
+  onMouseDown={(e) => e.stopPropagation()}
+>
+  <InfiniteScrollUserDropdown
+    // This logic ensures the UI shows "Unassign" when state is 'unassigned'
+    value={userFilter === 'all' ? '' : (userFilter === 'unassigned' ? 'unassign' : userFilter)}
+    onChange={(val) => {
+      // Log to verify if the component returns 'unassign' or 'unassigned'
+      console.log("Selected Value:", val); 
+
+      if (!val || val === '' || val === 'all') {
+        setUserFilter('all');
+      } else if (val === 'unassign' || val === 'unassigned') {
+        setUserFilter('unassigned');
+      } else {
+        setUserFilter(val);
+      }
+      handleFilterChange();
+    }}
+    includeUnassign={true}
+    placeholder="All Users"
+  />
+</div>
 
               <div>
-                {/* Standard Select for Filtering (needs "All Users" and "Unassigned" options easily) */}
-                <select
-                  value={userFilter}
-                  onChange={(e) => {
-                    setUserFilter(e.target.value);
-                    handleFilterChange();
-                  }}
-                  className="form-input w-full"
-                >
-                  <option value="all">All Users</option>
-                  <option value="unassigned">Unassigned</option>
-                  {users.map(user => (
-                    <option key={user._id} value={user._id}>
-                      {user.name} ({user.role})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary w-full"
-                >
-                  {loading ? (
-                    <>
-                      <div className="loading-spinner mr-2"></div>
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      Search
-                    </>
-                  )}
-                </button>
+              <button
+  type="submit"
+  disabled={loading}
+  className="btn btn-primary w-full"
+>
+  {loading ? (
+    <>
+      <div className="loading-spinner mr-2"></div>
+      Searching...
+    </>
+  ) : (
+    <>
+      <Search className="w-4 h-4" />
+      Search
+    </>
+  )}
+</button>
 
               </div>
             </form>
@@ -760,17 +758,17 @@ const AssignLeads: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Leads Assignment</h3>
               <div className="flex items-center gap-3">
-                <h3 className="text-lg font-semibold">
-                  Leads Available for Assignment
-                </h3>
+  <h3 className="text-lg font-semibold">
+    Leads Available for Assignment
+  </h3>
 
-                {loading && (
-                  <span className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="loading-spinner w-4 h-4"></div>
-                    Refreshing…
-                  </span>
-                )}
-              </div>
+  {loading && (
+    <span className="flex items-center gap-2 text-sm text-gray-500">
+      <div className="loading-spinner w-4 h-4"></div>
+      Refreshing…
+    </span>
+  )}
+</div>
 
 
             </div>
@@ -846,14 +844,14 @@ const AssignLeads: React.FC = () => {
                     </td>
                     <td className="whitespace-nowrap">
                       <span className={`font-medium ${lead.priority === 'High' ? 'text-red-600' :
-                        lead.priority === 'Medium' ? 'text-yellow-600' : 'text-green-600'
+                          lead.priority === 'Medium' ? 'text-yellow-600' : 'text-green-600'
                         }`}>
                         {lead.priority}
                       </span>
                     </td>
                     <td className="whitespace-nowrap text-sm text-gray-600">
-                      {new Date(lead.createdAt).toLocaleString()}
-                    </td>
+  {new Date(lead.createdAt).toLocaleString()}
+</td>
 
                     <td className="whitespace-nowrap max-w-xs">
                       {lead.notes && lead.notes.length > 0 ? (

@@ -11,7 +11,8 @@ import {
   UserCheck,
   FileSpreadsheet,
   Target,
-  Bot
+  CalendarCheck,
+  MessageSquare
 } from 'lucide-react';
 import type { NavItem } from '../types';
 import Logo from './Logo';
@@ -32,9 +33,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Import Leads', href: '/leads/import', icon: Upload, adminOnly: true },
     { name: 'Assign Leads', href: '/leads/assign', icon: FileSpreadsheet, adminOnly: true },
     { name: 'User Management', href: '/users', icon: UserCheck, adminOnly: true },
-    { name: 'Course Automation', href: '/course-automation-configs', icon: Bot, adminOnly: true },
     { name: 'Analytics', href: '/analytics', icon: TrendingUp, adminOnly: true },
     { name: 'Settings', href: '/settings', icon: Settings, adminOnly: true },
+ // Ensure this matches the Route path exactly
+ { 
+  name: "WhatsApp", 
+  href: "/WhatsAppChat", 
+  icon: MessageSquare,
+  adminOnly: true,
+  target: "_blank" 
+},
+{ 
+  name: "Attendance Management", 
+  href: "/attendance-management", // Must be lowercase to match Route
+  icon: CalendarCheck, 
+  adminOnly: true
+},
+
   ];
 
   // Filter navigation based on user role
@@ -46,9 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   });
 
   return (
-    <div
-      className={`sidebar ${isOpen ? 'open' : ''}`}
-    >
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="sidebar-header">
@@ -67,6 +80,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <nav className="sidebar-nav flex-1">
           {filteredNavigation.map((item) => {
             const Icon = item.icon;
+
+            // Handle links that should open in a new tab
+            if (item.target === "_blank") {
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="nav-item"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+                >
+                  <Icon className="w-5 h-5" />
+                  {item.name}
+                </a>
+              );
+            }
+
+            // Standard Internal Navigation
             return (
               <NavLink
                 key={item.name}
@@ -76,7 +108,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   `nav-item ${isActive ? 'active' : ''}`
                 }
                 onClick={() => {
-                  // Close mobile sidebar when navigating
                   if (window.innerWidth < 1024) {
                     onClose();
                   }
@@ -94,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
               <span className="text-sm font-medium text-blue-600">
-                {user?.name.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">

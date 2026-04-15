@@ -43,7 +43,33 @@ const MyLeads: React.FC = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [selectedAssignmentLead, setSelectedAssignmentLead] = useState<any>(null);
-  
+  const [quickSearchQuery, setQuickSearchQuery] = useState('');
+const [quickSearchResults, setQuickSearchResults] = useState<Lead[]>([]);
+const [showQuickPopup, setShowQuickPopup] = useState(false);
+
+const handleQuickSearch = async () => {
+  if (!quickSearchQuery.trim()) {
+    setQuickSearchResults([]);
+    setShowQuickPopup(false);
+    return;
+  }
+
+  try {
+    const res = await leadApi.getLeadsBySearch(quickSearchQuery);
+
+    if (res.success && res.data) {
+      setQuickSearchResults(res.data);
+      setShowQuickPopup(true);
+    }
+  } catch (error) {
+    toast.error('Quick search failed');
+  }
+};
+useEffect(() => {
+  const closePopup = () => setShowQuickPopup(false);
+  window.addEventListener('click', closePopup);
+  return () => window.removeEventListener('click', closePopup);
+}, []);
 
   // Initialize state from URL parameters on component mount
   useEffect(() => {
@@ -93,32 +119,21 @@ const MyLeads: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get all my leads to check which folders actually have leads
-      const myLeadsResponse = await leadApi.getMyLeads(1, 1000); // Get all leads to check folders
+      const response = await leadApi.getFolderCounts(); 
       
-      if (myLeadsResponse.success && myLeadsResponse.data) {
-        const myLeads = myLeadsResponse.data;
-        
-        // Get unique folders from user's leads only
-        const foldersWithLeads = new Set<string>();
-        const stats: Record<string, number> = {};
-        
-        myLeads.forEach(lead => {
-          const folder = lead.folder || 'Uncategorized';
-          foldersWithLeads.add(folder);
-          stats[folder] = (stats[folder] || 0) + 1;
-        });
-        
-        const availableFolders = Array.from(foldersWithLeads).sort();
+      if (response.success && response.data) {
+        // Use 'any' temporarily to break the conflict, 
+        // then cast to the specific structure we built in the backend
+        const data = response.data as any;
+  
+        const folderData: Record<string, number> = data.folderStats || {};
+        const statusData: Record<string, number> = data.statusStats || {};
+  
+        setFolderStats(folderData);
+        setStatusStats(statusData);
+  
+        const availableFolders = Object.keys(folderData).sort();
         setAvailableFolders(availableFolders);
-        setFolderStats(stats);
-
-        // Calculate status stats
-        const statusCounts: Record<string, number> = {};
-        myLeads.forEach(lead => {
-          statusCounts[lead.status] = (statusCounts[lead.status] || 0) + 1;
-        });
-        setStatusStats(statusCounts);
       }
     } catch (error) {
       console.error('Error fetching folders:', error);
@@ -269,7 +284,8 @@ const MyLeads: React.FC = () => {
       'Negotiating': 'bg-pink-100 text-pink-800',
       'Sales Done': 'bg-teal-100 text-teal-800',
       'DNP': 'bg-slate-100 text-slate-800',
-      'Wrong Number': 'bg-gray-100 text-gray-800'
+      'Wrong Number': 'bg-gray-100 text-gray-800',
+      'Call Back': 'bg-cyan-100 text-cyan-800' // Added this line
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -317,6 +333,81 @@ const MyLeads: React.FC = () => {
             }
           </p>
         </div>
+        <div
+  className="relative w-full max-w-sm"
+  onClick={(e) => e.stopPropagation()}
+>
+  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
+  <input
+    type="text"
+    placeholder="Quick search: name, email, or phone"
+    value={quickSearchQuery}
+    onChange={(e) => {
+      setQuickSearchQuery(e.target.value);
+      handleQuickSearch();
+    }}
+    className="
+      input input-bordered
+      w-full
+      pl-10
+      h-11
+      text-sm
+      focus:outline-none
+      focus:ring-2
+      focus:ring-primary
+    "
+  />
+
+  {/* QUICK SEARCH POPUP */}
+  {showQuickPopup && quickSearchResults.length > 0 && (
+    <div
+      className="
+        absolute z-50 mt-2 w-full
+        bg-white rounded-lg shadow-2xl
+        border border-gray-200
+        max-h-80 overflow-y-auto
+      "
+    >
+      {quickSearchResults.slice(0, 8).map((lead) => (
+        <div
+          key={lead._id}
+          onClick={() => {
+            setShowQuickPopup(false);
+            setQuickSearchQuery('');
+            window.open(`/leads/${lead._id}`, '_blank');
+          }}
+          className="
+            px-4 py-2.5 cursor-pointer
+            transition hover:bg-blue-50
+          "
+        >
+          <div className="font-medium text-sm text-gray-900 truncate">
+            {lead.name}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-gray-600 mt-0.5 truncate">
+            <Mail className="w-3.5 h-3.5 text-gray-400" />
+            {lead.email}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+            <Phone className="w-3.5 h-3.5 text-gray-400" />
+            {lead.phone}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+<button
+  onClick={handleQuickSearch}
+  className="btn btn-primary h-11 flex items-center gap-2"
+>
+  <Search className="w-4 h-4" />
+  Quick Search
+</button>
+
         <div className="flex items-center gap-3">
           <button
             onClick={currentView === 'folders' ? fetchFolders : fetchMyLeads}
@@ -330,6 +421,9 @@ const MyLeads: React.FC = () => {
             Add Lead
           </a>
         </div>
+   
+
+
       </div>
 
       {/* Stats Cards */}
