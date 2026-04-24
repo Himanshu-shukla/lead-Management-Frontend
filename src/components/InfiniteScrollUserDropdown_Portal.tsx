@@ -184,13 +184,13 @@ const InfiniteScrollUserDropdown: React.FC<InfiniteScrollUserDropdownProps> = ({
               <div className="p-10 text-center"><Loader className="w-6 h-6 animate-spin mx-auto text-blue-500" /></div>
             ) : (
               <div className="py-1">
-                <button onClick={() => handleSelect('')} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100">No change</button>
-                {includeUnassign && <button onClick={() => handleSelect('unassign')} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 font-medium">🔄 Unassign</button>}
+                <button type="button" onClick={() => handleSelect('')} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100">No change</button>
+                {includeUnassign && <button type="button" onClick={() => handleSelect('unassign')} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 font-medium">🔄 Unassign</button>}
                 
                 <div className="h-px bg-gray-100 my-1" />
                 
                 {users.map(u => (
-                  <button key={u._id} onClick={() => handleSelect(u._id)} className={`w-full px-4 py-2 text-left hover:bg-blue-50 text-sm ${value === u._id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
+                  <button type="button" key={u._id} onClick={() => handleSelect(u._id)} className={`w-full px-4 py-2 text-left hover:bg-blue-50 text-sm ${value === u._id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
                     <div className="font-medium text-gray-900">{u.name} <span className="text-xs text-gray-400 font-normal">({u.role})</span></div>
                     <div className="text-xs text-gray-500">{u.email}</div>
                   </button>

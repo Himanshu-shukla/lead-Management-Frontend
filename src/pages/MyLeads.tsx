@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leadApi, statusApi } from '../lib/api';
 import type { Lead, LeadStatus } from '../types';
+import LeadWhatsAppButton from '../components/LeadWhatsAppButton';
 import { 
   Phone,
   Mail,
@@ -758,6 +759,9 @@ useEffect(() => {
                           >
                             {lead.phone}
                           </a>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <LeadWhatsAppButton lead={lead} />
                         </div>
                       </div>
                     </td>

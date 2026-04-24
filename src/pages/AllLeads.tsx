@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leadApi, userApi, statusApi } from '../lib/api';
 import type { Lead, LeadStatus, LeadSource, LeadPriority, LeadFilters, User } from '../types';
+import LeadWhatsAppButton from '../components/LeadWhatsAppButton';
 import { 
   Search, 
   Filter,
@@ -12,7 +13,6 @@ import {
   UserPlus,
   Phone,
   Mail,
-  MessageCircle,
   Calendar,
   RefreshCw,
   FolderOpen,
@@ -51,7 +51,7 @@ const AllLeads: React.FC = () => {
 const [quickSearchResults, setQuickSearchResults] = useState<Lead[]>([]);
 const [showQuickPopup, setShowQuickPopup] = useState(false);
 
-const handleQuickSearch = async () => {
+  const handleQuickSearch = async () => {
   if (!quickSearchQuery.trim()) {
     setQuickSearchResults([]);
     setShowQuickPopup(false);
@@ -146,16 +146,17 @@ const handleQuickSearch = async () => {
     fetchUsers();
     fetchStatuses();
   }, []);
-// 🔽 Close quick search popup when clicking outside
-useEffect(() => {
-  const closePopup = () => setShowQuickPopup(false);
 
-  window.addEventListener('click', closePopup);
+  // Close quick search popup when clicking outside
+  useEffect(() => {
+    const closePopup = () => setShowQuickPopup(false);
 
-  return () => {
-    window.removeEventListener('click', closePopup);
-  };
-}, []);
+    window.addEventListener('click', closePopup);
+
+    return () => {
+      window.removeEventListener('click', closePopup);
+    };
+  }, []);
 
   const fetchStatuses = async () => {
     try {
@@ -948,13 +949,7 @@ useEffect(() => {
                         </a>
                       </div>
                       <div className="flex items-center text-sm">
-                        <MessageCircle className="w-3 h-3 text-gray-400 mr-1" />
-                        <a 
-                          href={`tel:${lead.whatsapp}`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          {lead.whatsapp}
-                        </a>
+                        <LeadWhatsAppButton lead={lead} />
                       </div>
                     </div>
                   </td>
@@ -1152,6 +1147,7 @@ useEffect(() => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

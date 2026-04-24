@@ -247,8 +247,6 @@ export const leadApi = {
     limit?: number
   ): Promise<PaginatedResponse<Lead>> => {
     try {
-      console.log("we are hitting this");
-  
       const params = new URLSearchParams();
   
       if (filters) {

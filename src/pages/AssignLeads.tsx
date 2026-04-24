@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { leadApi, userApi, statusApi } from '../lib/api';
 import type { Lead, User, LeadStatus, LeadSource } from '../types';
 import InfiniteScrollUserDropdown from '../components/InfiniteScrollUserDropdown_Portal';
+import LeadWhatsAppButton from '../components/LeadWhatsAppButton';
 import {
   UserPlus,
   Search,
@@ -274,10 +275,6 @@ const [appliedToDate, setAppliedToDate] = useState('');
     setCurrentView('leads');
     setCurrentPage(1);
     setSelectedLeads([]);
-    // Ensure users are loaded when switching to leads view
-    if (users.length === 0) {
-      fetchUsers();
-    }
   };
 
   const handleBackToFolders = () => {
@@ -394,6 +391,14 @@ const [appliedToDate, setAppliedToDate] = useState('');
     }
     // Fallback if user is from infinite scroll but not in initial 'users' list
     return 'Assign to selected user';
+  };
+
+  const getSelectedAssigneeLabel = () => {
+    if (!selectedUser) return 'No assignee selected';
+    if (selectedUser === 'unassign') return 'Assignee: Unassign from current user';
+
+    const foundUser = users.find(u => u._id === selectedUser);
+    return foundUser ? `Assignee: ${foundUser.name}` : 'Assignee: Selected user';
   };
 
   if (loading && currentView === 'folders') {
@@ -552,6 +557,7 @@ const [appliedToDate, setAppliedToDate] = useState('');
     onClick={(e) => e.stopPropagation()}
     onMouseDown={(e) => e.stopPropagation()}
   >
+    <label className="form-label">Assign To (Bulk Action)</label>
     <InfiniteScrollUserDropdown
       value={selectedUser}
       onChange={setSelectedUser}
@@ -579,6 +585,7 @@ const [appliedToDate, setAppliedToDate] = useState('');
         {/* Action Button */}
         <div>
         <button
+                  type="button"
                   onClick={handleAssignLeads}
                   disabled={selectedLeads.length === 0 || (!selectedUser && !bulkStatus) || assigning || updatingStatus}
                   className="btn btn-primary w-full"
@@ -595,6 +602,7 @@ const [appliedToDate, setAppliedToDate] = useState('');
             </>
           )}
         </button>
+        <p className="text-xs text-gray-500 mt-2">{getSelectedAssigneeLabel()}</p>
       </div>
     </div>
 
@@ -635,7 +643,6 @@ setAppliedFromDate(fromDate);
 setAppliedToDate(toDate);
 
 setCurrentPage(1);
-fetchLeads();
             }} className="grid grid-cols-1 md:grid-cols-9 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
@@ -700,18 +707,16 @@ fetchLeads();
                   ))}
                 </select>
               </div>
-              <div 
+<div 
   className="md:col-span-1" 
   onClick={(e) => e.stopPropagation()} 
   onMouseDown={(e) => e.stopPropagation()}
 >
+  <label className="form-label">Filter Assignee</label>
   <InfiniteScrollUserDropdown
     // This logic ensures the UI shows "Unassign" when state is 'unassigned'
     value={userFilter === 'all' ? '' : (userFilter === 'unassigned' ? 'unassign' : userFilter)}
     onChange={(val) => {
-      // Log to verify if the component returns 'unassign' or 'unassigned'
-      console.log("Selected Value:", val); 
-
       if (!val || val === '' || val === 'all') {
         setUserFilter('all');
       } else if (val === 'unassign' || val === 'unassigned') {
@@ -829,6 +834,9 @@ fetchLeads();
                           <a href={`tel:${lead.phone}`} className="text-blue-600 hover:text-blue-800">
                             {lead.phone}
                           </a>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <LeadWhatsAppButton lead={lead} />
                         </div>
                       </div>
                     </td>
@@ -1013,6 +1021,7 @@ fetchLeads();
           </div>
         </div>
       )}
+
     </div>
   );
 };
