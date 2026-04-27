@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { MessageCircle, X } from 'lucide-react';
 import type { Lead } from '../types';
 
@@ -21,13 +22,13 @@ const WhatsAppComposerModal: React.FC<WhatsAppComposerModalProps> = ({
 }) => {
   if (!open || !lead) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] px-4 py-6"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden"
+        className="w-full max-w-2xl max-h-[calc(100vh-3rem)] rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
@@ -46,7 +47,7 @@ const WhatsAppComposerModal: React.FC<WhatsAppComposerModalProps> = ({
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-4 overflow-y-auto">
           <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3">
             <p className="text-sm font-medium text-green-900">
               This will open WhatsApp with your message prefilled.
@@ -86,7 +87,8 @@ const WhatsAppComposerModal: React.FC<WhatsAppComposerModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

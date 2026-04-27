@@ -25,7 +25,10 @@ export const getLeadWhatsAppNumber = (lead: Lead) => {
 };
 
 export const buildWhatsAppMessage = (lead: Lead) =>
-  `Hi ${lead.name}, I'm reaching out regarding your inquiry.`;
+  `Hi ${lead.name}, Hope you are doing well. I'm reaching out regarding your inquiry on Data Analytics and Gen AI Training program
+
+Regards
+Brit Institute`;
 
 export const buildWhatsAppUrl = (lead: Lead, message: string) => {
   const phoneNumber = getLeadWhatsAppNumber(lead);
