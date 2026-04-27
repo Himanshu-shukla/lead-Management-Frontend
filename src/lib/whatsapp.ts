@@ -24,8 +24,14 @@ export const getLeadWhatsAppNumber = (lead: Lead) => {
   return normalizeWhatsAppNumber(preferredNumber);
 };
 
+export const formatWhatsAppLeadName = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 export const buildWhatsAppMessage = (lead: Lead) =>
-  `Hi ${lead.name}, Hope you are doing well. I'm reaching out regarding your inquiry on Data Analytics and Gen AI Training program
+  `Hi ${formatWhatsAppLeadName(lead.name)}, Hope you are doing well. I'm reaching out regarding your inquiry on Data Analytics and Gen AI Training program
 
 Regards
 Brit Institute`;
