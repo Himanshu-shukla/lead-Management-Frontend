@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { leadApi } from '../lib/api';
 import type { Lead, LeadStatus, LeadSource, LeadPriority } from '../types';
+import LeadWhatsAppButton from '../components/LeadWhatsAppButton';
 import { 
   ArrowLeft,
   Edit,
@@ -10,7 +11,6 @@ import {
   X,
   Plus,
   MessageSquare,
-  MessageCircle, // Added for WhatsApp Icon
   User,
   Mail,
   Phone,
@@ -451,20 +451,11 @@ const LeadDetails: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* ADDED WHATSAPP DISPLAY BLOCK HERE */}
-                    {lead.whatsapp && (
+                    {(lead.whatsapp || lead.phone) && (
                       <div className="flex items-center gap-3">
-                        <MessageCircle className="w-5 h-5 text-green-500" />
                         <div>
                           <p className="text-sm font-medium text-gray-500">WhatsApp</p>
-                          <a 
-                            href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            {lead.whatsapp}
-                          </a>
+                          <LeadWhatsAppButton lead={lead} className="text-base" />
                         </div>
                       </div>
                     )}
