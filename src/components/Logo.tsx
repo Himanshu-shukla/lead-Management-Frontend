@@ -1,9 +1,8 @@
 import React from 'react';
-import logo from '../assets/favicon.png';
 
 const Logo: React.FC<{ size?: number }> = ({ size = 40 }) => (
   <img
-    src={logo}
+    src="/src/assets/britinstitute_v1.png"
     alt="EdTech Logo"
     width={size}
     height={size}
